@@ -17,6 +17,7 @@ Muchas plataformas para pasar archivos entre dispositivos (mensajería, nubes gr
 - Aplicación de escritorio para **Windows, macOS y Linux**.
 
 ### Fuera de alcance (por ahora)
+- Emparejamiento y control de acceso: se asume una red doméstica de confianza. Cualquier equipo de la LAN que se conecte al daemon puede leer y modificar la carpeta compartida.
 - Sincronización a través de internet (fuera de la LAN).
 - Aplicaciones móviles (Android / iOS).
 - Historial de versiones de archivos.
@@ -25,15 +26,14 @@ Muchas plataformas para pasar archivos entre dispositivos (mensajería, nubes gr
 ## Funcionalidades básicas
 
 1. **Descubrimiento automático**: los dispositivos con LANShare se encuentran solos en la red (mDNS), sin configurar IPs.
-2. **Emparejamiento**: la primera vez, dos dispositivos se vinculan con un código de confirmación. Solo se sincroniza con dispositivos emparejados; el resto de la red no tiene acceso.
-3. **Detección de cambios**: la app vigila la carpeta compartida y detecta archivos nuevos, modificados, renombrados y borrados.
-4. **Sincronización**:
+2. **Detección de cambios**: la app vigila la carpeta compartida y detecta archivos nuevos, modificados, renombrados y borrados.
+3. **Sincronización**:
    - Archivos nuevos o modificados se copian al resto de los dispositivos.
    - Los borrados se propagan (un dispositivo que estaba apagado no "resucita" archivos borrados).
    - La integridad de cada archivo se verifica mediante hash.
-5. **Conflictos**: si un mismo archivo se modifica en dos dispositivos antes de sincronizarse, se conservan ambas versiones (`archivo.conflicto-<dispositivo>.ext`). Nunca se pierden datos.
-6. **Transferencias reanudables**: los archivos grandes se transfieren por bloques; si la conexión se corta, se retoma desde donde quedó.
-7. **Interfaz mínima**: ver dispositivos conectados, estado de sincronización y emparejar nuevos dispositivos.
+4. **Conflictos**: si un mismo archivo se modifica en dos dispositivos antes de sincronizarse, se conservan ambas versiones (`archivo.conflicto-<dispositivo>.ext`) y ambas se muestran en la app; el usuario elimina la que no quiera. Nunca se pierden datos.
+5. **Transferencias reanudables**: los archivos grandes se transfieren por bloques; si la conexión se corta, se retoma desde donde quedó.
+6. **Interfaz mínima**: ver dispositivos conectados, estado de sincronización y configuración.
 
 ## Cómo funciona (visión general)
 
@@ -52,7 +52,7 @@ Muchas plataformas para pasar archivos entre dispositivos (mensajería, nubes gr
 ```
 
 1. Cada dispositivo se anuncia en la LAN y descubre a los demás.
-2. Los dispositivos emparejados intercambian sus índices (lista de archivos con su hash y versión).
+2. Los dispositivos intercambian sus índices (lista de archivos con su hash y versión).
 3. Cada uno compara y pide los archivos que le faltan o que tiene desactualizados.
 4. Ante cada cambio local, se notifica a los demás para volver a sincronizar.
 
@@ -60,6 +60,29 @@ Muchas plataformas para pasar archivos entre dispositivos (mensajería, nubes gr
 
 - **Lenguaje**: Go
 - Los detalles de implementación (librerías, protocolo, formato del índice) se definirán más adelante.
+
+## Estructura del proyecto
+
+```
+cmd/lanshare/        punto de entrada del daemon
+internal/
+  controller/        coordina los componentes y ofrece servicios al front end
+  discovery/         busca dispositivos en la LAN
+  transfer/          intercambia logs y archivos con otros dispositivos
+  reconcile/         compara logs y decide qué hacer (sin red ni disco)
+  watcher/           detecta cambios en la carpeta compartida
+  storage/           acceso al disco: carpeta compartida y log local
+```
+
+## Compilar y probar
+
+```sh
+go build ./...
+go test -race ./...
+go vet ./...
+gofmt -l .
+go run ./cmd/lanshare
+```
 
 ## Estado
 

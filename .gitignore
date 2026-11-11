@@ -31,3 +31,9 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Binario de LANShare
+/lanshare
+
+# Notas locales de aprendizaje
+.vibe-wise/
